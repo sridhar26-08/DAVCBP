@@ -44,7 +44,7 @@ export const About: React.FC = () => {
           Dataset Schema & Attributes
         </h3>
         <p className="text-xs text-slate-600 dark:text-slate-400">
-          The dataset comprises consumer product reviews across six primary departments: Mobiles, Electronics, Audio, Fashion, Home & Kitchen, and Appliances.
+          The dataset comprises consumer product reviews across twelve primary departments: Mobiles, Electronics, Audio, Fashion, Home & Kitchen, Appliances, Beauty & Personal Care, Sports & Fitness, Books & Stationery, Toys & Baby Care, Automotive Accessories, and Grocery & Gourmet.
         </p>
 
         <div className="overflow-x-auto">

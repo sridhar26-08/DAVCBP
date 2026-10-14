@@ -38,7 +38,7 @@ export function App() {
   const pageTitles: Record<PageId, { title: string; subtitle: string }> = {
     overview: {
       title: 'Executive Sentiment Dashboard',
-      subtitle: 'Real-time aggregated metrics across 2,500 Flipkart customer reviews',
+      subtitle: `Real-time aggregated metrics across ${filterMeta?.total_reviews ? filterMeta.total_reviews.toLocaleString() : '3,000'} Flipkart customer reviews`,
     },
     'sentiment-lab': {
       title: 'Sentiment Comparison Lab',

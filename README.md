@@ -60,7 +60,7 @@ graph TD
 * **KPI Metric Cards**: Total reviews analyzed, average consumer star rating, positive sentiment share %, and active model accuracy.
 * **Natural-Language Auto-Summary**: Dynamic insight banner automatically summarizing highest-performing categories, dominant customer grievances, and statistical correlation.
 * **Sentiment Donut Chart**: Proportional breakdown of Positive, Neutral, and Negative sentiments with interactive tooltips and center metrics.
-* **Category Breakdown Bar Chart**: Stacked sentiment comparison across Mobiles, Electronics, Audio, Fashion, Home & Kitchen, and Appliances.
+* **Category Breakdown Bar Chart**: Stacked sentiment comparison across 12 product categories: Mobiles, Electronics, Audio, Fashion, Home & Kitchen, Appliances, Beauty & Personal Care, Sports & Fitness, Books & Stationery, Toys & Baby Care, Automotive Accessories, and Grocery & Gourmet.
 * **PDF Snapshot Export**: One-click action allowing users and professors to generate a printable report of the dashboard.
 
 ### 2. 🧪 Sentiment Lab (Interactive Multi-Model Sandbox)
