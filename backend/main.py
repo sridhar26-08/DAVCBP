@@ -64,12 +64,13 @@ def get_filters():
 
 @app.get("/api/overview")
 def get_overview(
-    sentiment_source: str = Query("lr_label", description="Sentiment model: lr_label, nb_label, vader_label, textblob_label, ground_truth_label")
+    sentiment_source: str = Query("lr_label", description="Sentiment model: lr_label, nb_label, vader_label, textblob_label, ground_truth_label"),
+    category: Optional[str] = Query(None, description="Department category filter")
 ):
     """Returns aggregate KPIs, sentiment donut distribution, category breakdown, and trend preview."""
     if not analyzer:
         raise HTTPException(status_code=503, detail="Analyzer not initialized")
-    return analyzer.get_overview(sentiment_source=sentiment_source)
+    return analyzer.get_overview(sentiment_source=sentiment_source, category=category)
 
 @app.get("/api/sentiment-by-category")
 def get_sentiment_by_category(
@@ -81,18 +82,21 @@ def get_sentiment_by_category(
     return analyzer.get_category_sentiment(sentiment_source=sentiment_source)
 
 @app.get("/api/trend", response_model=TrendResponse)
-def get_trend():
+def get_trend(category: Optional[str] = Query(None, description="Department category filter")):
     """Returns monthly sentiment trends and correlation scatter data."""
     if not analyzer:
         raise HTTPException(status_code=503, detail="Analyzer not initialized")
-    return analyzer.get_trend_data()
+    return analyzer.get_trend_data(category=category)
 
 @app.get("/api/ngrams", response_model=NgramsResponse)
-def get_ngrams(top_n: int = Query(25, ge=5, le=50)):
+def get_ngrams(
+    top_n: int = Query(25, ge=5, le=50),
+    category: Optional[str] = Query(None, description="Department category filter")
+):
     """Returns top unigrams and bigrams for positive and negative reviews."""
     if not analyzer:
         raise HTTPException(status_code=503, detail="Analyzer not initialized")
-    return analyzer.get_ngrams(top_n=top_n)
+    return analyzer.get_ngrams(top_n=top_n, category=category)
 
 @app.get("/api/model-comparison", response_model=ModelComparisonResponse)
 def get_model_comparison():

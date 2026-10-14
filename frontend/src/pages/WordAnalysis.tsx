@@ -10,18 +10,23 @@ import {
 import { NgramsData, fetchNgrams } from '../lib/api';
 import { WordCloudCanvas } from '../components/charts/WordCloudCanvas';
 
-export const WordAnalysis: React.FC = () => {
+interface WordAnalysisProps {
+  selectedCategory?: string;
+}
+
+export const WordAnalysis: React.FC<WordAnalysisProps> = ({ selectedCategory = 'all' }) => {
   const [data, setData] = useState<NgramsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'positive' | 'negative'>('positive');
   const [bigramSearch, setBigramSearch] = useState('');
 
   useEffect(() => {
-    fetchNgrams(40)
+    setLoading(true);
+    fetchNgrams(40, selectedCategory)
       .then((res) => setData(res))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedCategory]);
 
   if (loading || !data) {
     return (

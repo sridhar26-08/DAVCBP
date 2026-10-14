@@ -22,16 +22,21 @@ import {
 import { TrendData, fetchTrends } from '../lib/api';
 import { ScatterCorrelationChart } from '../components/charts/ScatterCorrelationChart';
 
-export const Trends: React.FC = () => {
+interface TrendsProps {
+  selectedCategory?: string;
+}
+
+export const Trends: React.FC<TrendsProps> = ({ selectedCategory = 'all' }) => {
   const [data, setData] = useState<TrendData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTrends()
+    setLoading(true);
+    fetchTrends(selectedCategory)
       .then((res) => setData(res))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedCategory]);
 
   if (loading || !data) {
     return (

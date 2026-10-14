@@ -14,20 +14,46 @@ import { ExportButton } from '../components/ExportButton';
 interface ReviewsProps {
   categories: string[];
   sentimentSource: string;
+  selectedCategory?: string;
+  onSelectCategory?: (cat: string) => void;
+  searchQuery?: string;
+  onChangeSearchQuery?: (q: string) => void;
 }
 
-export const Reviews: React.FC<ReviewsProps> = ({ categories, sentimentSource }) => {
+export const Reviews: React.FC<ReviewsProps> = ({
+  categories,
+  sentimentSource,
+  selectedCategory,
+  onSelectCategory,
+  searchQuery,
+  onChangeSearchQuery,
+}) => {
   const [reviewsData, setReviewsData] = useState<ReviewsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Filters
-  const [category, setCategory] = useState<string>('all');
+  const [category, setCategory] = useState<string>(selectedCategory || 'all');
   const [sentiment, setSentiment] = useState<string>('all');
-  const [search, setSearch] = useState<string>('');
+  const [search, setSearch] = useState<string>(searchQuery || '');
   const [suspiciousOnly, setSuspiciousOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<string>('date');
   const [sortOrder, setSortOrder] = useState<string>('desc');
   const [page, setPage] = useState<number>(1);
+
+  // Keep in sync with global FilterBar
+  useEffect(() => {
+    if (selectedCategory !== undefined && selectedCategory !== category) {
+      setCategory(selectedCategory);
+      setPage(1);
+    }
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    if (searchQuery !== undefined && searchQuery !== search) {
+      setSearch(searchQuery);
+      setPage(1);
+    }
+  }, [searchQuery]);
 
   const loadData = () => {
     setLoading(true);
@@ -72,8 +98,10 @@ export const Reviews: React.FC<ReviewsProps> = ({ categories, sentimentSource })
 
   const resetAllFilters = () => {
     setCategory('all');
+    onSelectCategory?.('all');
     setSentiment('all');
     setSearch('');
+    onChangeSearchQuery?.('');
     setSuspiciousOnly(false);
     setSortBy('date');
     setSortOrder('desc');
@@ -121,7 +149,11 @@ export const Reviews: React.FC<ReviewsProps> = ({ categories, sentimentSource })
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearch(val);
+                onChangeSearchQuery?.(val);
+              }}
               placeholder="Search text, product, reviewer..."
               className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 text-slate-900 dark:text-slate-100 placeholder-slate-400"
             />
@@ -131,7 +163,9 @@ export const Reviews: React.FC<ReviewsProps> = ({ categories, sentimentSource })
           <select
             value={category}
             onChange={(e) => {
-              setCategory(e.target.value);
+              const val = e.target.value;
+              setCategory(val);
+              onSelectCategory?.(val);
               setPage(1);
             }}
             className="text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30"

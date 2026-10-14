@@ -17,9 +17,15 @@ import { TrendLineChart } from '../components/charts/TrendLineChart';
 
 interface OverviewProps {
   sentimentSource: string;
+  selectedCategory?: string;
+  onResetCategory?: () => void;
 }
 
-export const Overview: React.FC<OverviewProps> = ({ sentimentSource }) => {
+export const Overview: React.FC<OverviewProps> = ({
+  sentimentSource,
+  selectedCategory = 'all',
+  onResetCategory,
+}) => {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +33,7 @@ export const Overview: React.FC<OverviewProps> = ({ sentimentSource }) => {
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    fetchOverview(sentimentSource)
+    fetchOverview(sentimentSource, selectedCategory)
       .then((res) => {
         if (isMounted) {
           setData(res);
@@ -44,7 +50,7 @@ export const Overview: React.FC<OverviewProps> = ({ sentimentSource }) => {
     return () => {
       isMounted = false;
     };
-  }, [sentimentSource]);
+  }, [sentimentSource, selectedCategory]);
 
   const handlePrint = () => {
     window.print();
@@ -86,13 +92,27 @@ export const Overview: React.FC<OverviewProps> = ({ sentimentSource }) => {
             <Sparkles className="w-5 h-5 text-amber-300" />
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
                 Executive Sentiment Insight
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-semibold">
                 AI Auto-Generated
               </span>
+              {selectedCategory !== 'all' && (
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-bold flex items-center gap-1.5 border border-amber-300 dark:border-amber-700">
+                  <span>Filtered: {selectedCategory}</span>
+                  {onResetCategory && (
+                    <button
+                      onClick={onResetCategory}
+                      className="hover:text-amber-950 dark:hover:text-white font-black"
+                      title="Reset category filter"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </span>
+              )}
             </div>
             <p className="text-xs md:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
               {data.auto_summary}
@@ -182,7 +202,7 @@ export const Overview: React.FC<OverviewProps> = ({ sentimentSource }) => {
               </p>
             </div>
           </div>
-          <CategoryBarChart data={data.category_sentiment} />
+          <CategoryBarChart data={data.category_sentiment} selectedCategory={selectedCategory} />
         </div>
       </div>
 

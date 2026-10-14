@@ -259,8 +259,14 @@ class SentimentAnalyzerPipeline:
         print(f"Analysis pipeline initialized successfully. {len(df)} reviews processed.")
 
     # Overview Data
-    def get_overview(self, sentiment_source: str = "lr_label") -> Dict[str, Any]:
-        df = self.df
+    def get_overview(self, sentiment_source: str = "lr_label", category: Optional[str] = None) -> Dict[str, Any]:
+        all_df = self.df
+        is_filtered = bool(category and category.lower() != 'all')
+        if is_filtered:
+            df = all_df[all_df['category'].str.lower() == category.lower()]
+        else:
+            df = all_df
+
         total = len(df)
         if total == 0:
             return {}
@@ -279,8 +285,8 @@ class SentimentAnalyzerPipeline:
         active_acc = self.model_metrics["logistic_regression"]["accuracy"]
 
         # Correlations
-        corr_r_s = round(float(df['rating'].corr(df['vader_score'])), 3)
-        corr_l_h = round(float(df['text_length'].corr(df['helpful_votes'])), 3)
+        corr_r_s = round(float(df['rating'].corr(df['vader_score'])), 3) if len(df) > 1 else 0.0
+        corr_l_h = round(float(df['text_length'].corr(df['helpful_votes'])), 3) if len(df) > 1 else 0.0
 
         # Sentiment distribution list for chart
         sentiment_dist = [
@@ -289,9 +295,9 @@ class SentimentAnalyzerPipeline:
             {"sentiment": "Negative", "count": neg, "percentage": neg_pct, "color": "#ef4444"}
         ]
 
-        # Category sentiment breakdown
+        # Category sentiment breakdown across all categories
         cat_data = []
-        for cat, group in df.groupby('category'):
+        for cat, group in all_df.groupby('category'):
             g_total = len(group)
             g_counts = group[col].value_counts().to_dict()
             g_pos = g_counts.get("Positive", 0)
@@ -304,13 +310,13 @@ class SentimentAnalyzerPipeline:
                 "positive": g_pos,
                 "neutral": g_neu,
                 "negative": g_neg,
-                "positive_pct": round((g_pos / g_total) * 100, 1),
-                "neutral_pct": round((g_neu / g_total) * 100, 1),
-                "negative_pct": round((g_neg / g_total) * 100, 1)
+                "positive_pct": round((g_pos / g_total) * 100, 1) if g_total else 0,
+                "neutral_pct": round((g_neu / g_total) * 100, 1) if g_total else 0,
+                "negative_pct": round((g_neg / g_total) * 100, 1) if g_total else 0
             })
         cat_data = sorted(cat_data, key=lambda x: x["total"], reverse=True)
 
-        # Trend preview (last 6-8 months)
+        # Trend preview
         monthly_preview = []
         for ym, group in df.groupby('year_month'):
             monthly_preview.append({
@@ -325,14 +331,22 @@ class SentimentAnalyzerPipeline:
         monthly_preview = sorted(monthly_preview, key=lambda x: x["month"])
 
         # Auto-generated natural language summary
-        highest_neg_cat = max(cat_data, key=lambda x: x["negative_pct"])
-        highest_pos_cat = max(cat_data, key=lambda x: x["positive_pct"])
-        auto_summary = (
-            f"Across {total:,} Flipkart reviews, overall customer sentiment is {pos_pct}% positive with a {avg_rating}★ average rating. "
-            f"'{highest_pos_cat['category']}' leads in satisfaction ({highest_pos_cat['positive_pct']}% positive), "
-            f"whereas '{highest_neg_cat['category']}' shows the highest critical feedback share at {highest_neg_cat['negative_pct']}% negative. "
-            f"Strong positive correlation (r = {corr_r_s}) confirms consistency between star ratings and text polarity."
-        )
+        if is_filtered:
+            cat_name = df['category'].iloc[0] if len(df) else category
+            auto_summary = (
+                f"Filtered by '{cat_name}': Across {total:,} customer reviews, "
+                f"sentiment is {pos_pct}% positive with a {avg_rating}★ average rating. "
+                f"Critical feedback represents {neg_pct}%, with rating-sentiment correlation of r = {corr_r_s}."
+            )
+        else:
+            highest_neg_cat = max(cat_data, key=lambda x: x["negative_pct"])
+            highest_pos_cat = max(cat_data, key=lambda x: x["positive_pct"])
+            auto_summary = (
+                f"Across {total:,} Flipkart reviews, overall customer sentiment is {pos_pct}% positive with a {avg_rating}★ average rating. "
+                f"'{highest_pos_cat['category']}' leads in satisfaction ({highest_pos_cat['positive_pct']}% positive), "
+                f"whereas '{highest_neg_cat['category']}' shows the highest critical feedback share at {highest_neg_cat['negative_pct']}% negative. "
+                f"Strong positive correlation (r = {corr_r_s}) confirms consistency between star ratings and text polarity."
+            )
 
         return {
             "total_reviews": total,
@@ -355,8 +369,11 @@ class SentimentAnalyzerPipeline:
         return overview.get("category_sentiment", [])
 
     # Monthly Trend & Correlation
-    def get_trend_data(self) -> Dict[str, Any]:
+    def get_trend_data(self, category: Optional[str] = None) -> Dict[str, Any]:
         df = self.df
+        if category and category.lower() != 'all':
+            df = df[df['category'].str.lower() == category.lower()]
+
         trends = []
         for ym, group in df.groupby('year_month'):
             trends.append({
@@ -370,8 +387,8 @@ class SentimentAnalyzerPipeline:
             })
         trends = sorted(trends, key=lambda x: x["month"])
 
-        # Sample 200 data points for scatter plot to keep frontend rendering lightweight and fast
-        sample_df = df.sample(n=min(250, len(df)), random_state=42)
+        # Sample data points for scatter plot
+        sample_df = df.sample(n=min(250, len(df)), random_state=42) if len(df) > 0 else df
         rating_vs_sentiment = []
         length_vs_helpful = []
         for _, row in sample_df.iterrows():
@@ -388,8 +405,8 @@ class SentimentAnalyzerPipeline:
                 "category": row['category']
             })
 
-        corr_r_s = round(float(df['rating'].corr(df['vader_score'])), 3)
-        corr_l_h = round(float(df['text_length'].corr(df['helpful_votes'])), 3)
+        corr_r_s = round(float(df['rating'].corr(df['vader_score'])), 3) if len(df) > 1 else 0.0
+        corr_l_h = round(float(df['text_length'].corr(df['helpful_votes'])), 3) if len(df) > 1 else 0.0
 
         return {
             "trends": trends,
@@ -400,8 +417,11 @@ class SentimentAnalyzerPipeline:
         }
 
     # N-gram Extraction (Unigrams and Bigrams)
-    def get_ngrams(self, top_n: int = 25) -> Dict[str, Any]:
+    def get_ngrams(self, top_n: int = 25, category: Optional[str] = None) -> Dict[str, Any]:
         df = self.df
+        if category and category.lower() != 'all':
+            df = df[df['category'].str.lower() == category.lower()]
+
         pos_df = df[df['lr_label'] == "Positive"]
         neg_df = df[df['lr_label'] == "Negative"]
 

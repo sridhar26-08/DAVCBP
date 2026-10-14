@@ -168,19 +168,54 @@ export interface FilterMeta {
   total_reviews: number;
 }
 
-export async function fetchOverview(sentimentSource = "lr_label"): Promise<OverviewData> {
+export async function fetchOverview(sentimentSource = "lr_label", category = "all"): Promise<OverviewData> {
+  const query = new URLSearchParams({ sentiment_source: sentimentSource });
+  if (category && category !== 'all') {
+    query.append('category', category);
+  }
+
   try {
-    const res = await fetch(`${BASE_URL}/overview?sentiment_source=${sentimentSource}`, { signal: AbortSignal.timeout(2500) });
+    const res = await fetch(`${BASE_URL}/overview?${query.toString()}`, { signal: AbortSignal.timeout(2500) });
     if (res.ok) return await res.json();
   } catch (e) {
     console.warn("Backend API unavailable, using verified precomputed dataset:", e);
   }
 
   // Graceful fallback for cloud/Vercel preview
-  if (sentimentSource === "nb_label") return (FALLBACK_DATA as any).overview_nb;
-  if (sentimentSource === "vader_label") return (FALLBACK_DATA as any).overview_vader;
-  if (sentimentSource === "textblob_label") return (FALLBACK_DATA as any).overview_tb;
-  return (FALLBACK_DATA as any).overview_lr;
+  let baseOverview: OverviewData;
+  if (sentimentSource === "nb_label") baseOverview = (FALLBACK_DATA as any).overview_nb;
+  else if (sentimentSource === "vader_label") baseOverview = (FALLBACK_DATA as any).overview_vader;
+  else if (sentimentSource === "textblob_label") baseOverview = (FALLBACK_DATA as any).overview_tb;
+  else baseOverview = (FALLBACK_DATA as any).overview_lr;
+
+  // Client-side category filtering for standalone/fallback mode
+  if (category && category !== 'all' && baseOverview?.category_sentiment) {
+    const catItem = baseOverview.category_sentiment.find(
+      c => c.category.toLowerCase() === category.toLowerCase()
+    );
+    if (catItem) {
+      const posPct = catItem.positive_pct;
+      const neuPct = catItem.neutral_pct;
+      const negPct = catItem.negative_pct;
+      return {
+        ...baseOverview,
+        total_reviews: catItem.total,
+        avg_rating: catItem.avg_rating,
+        positive_pct: posPct,
+        neutral_pct: neuPct,
+        negative_pct: negPct,
+        auto_summary: `Filtered by '${catItem.category}': Across ${catItem.total.toLocaleString()} customer reviews, sentiment is ${posPct}% positive with a ${catItem.avg_rating}★ average rating. Critical feedback represents ${negPct}%.`,
+        sentiment_distribution: [
+          { sentiment: "Positive", count: catItem.positive, percentage: posPct, color: "#10b981" },
+          { sentiment: "Neutral", count: catItem.neutral, percentage: neuPct, color: "#f59e0b" },
+          { sentiment: "Negative", count: catItem.negative, percentage: negPct, color: "#ef4444" }
+        ],
+        category_sentiment: baseOverview.category_sentiment
+      };
+    }
+  }
+
+  return baseOverview;
 }
 
 export async function fetchFilterMeta(): Promise<FilterMeta> {
@@ -193,19 +228,46 @@ export async function fetchFilterMeta(): Promise<FilterMeta> {
   return (FALLBACK_DATA as any).filters;
 }
 
-export async function fetchTrends(): Promise<TrendData> {
+export async function fetchTrends(category = "all"): Promise<TrendData> {
+  const query = new URLSearchParams();
+  if (category && category !== 'all') {
+    query.append('category', category);
+  }
+
   try {
-    const res = await fetch(`${BASE_URL}/trend`, { signal: AbortSignal.timeout(2500) });
+    const res = await fetch(`${BASE_URL}/trend?${query.toString()}`, { signal: AbortSignal.timeout(2500) });
     if (res.ok) return await res.json();
   } catch (e) {
     // fallback
   }
-  return (FALLBACK_DATA as any).trend;
+
+  const baseTrend: TrendData = (FALLBACK_DATA as any).trend;
+  if (category && category !== 'all' && baseTrend) {
+    const catLower = category.toLowerCase();
+    const filteredRatingVsSent = (baseTrend.rating_vs_sentiment || []).filter(
+      item => item.category.toLowerCase() === catLower
+    );
+    const filteredLengthVsHelpful = (baseTrend.length_vs_helpful || []).filter(
+      item => item.category.toLowerCase() === catLower
+    );
+    return {
+      ...baseTrend,
+      rating_vs_sentiment: filteredRatingVsSent.length ? filteredRatingVsSent : baseTrend.rating_vs_sentiment,
+      length_vs_helpful: filteredLengthVsHelpful.length ? filteredLengthVsHelpful : baseTrend.length_vs_helpful,
+    };
+  }
+
+  return baseTrend;
 }
 
-export async function fetchNgrams(topN = 25): Promise<NgramsData> {
+export async function fetchNgrams(topN = 25, category = "all"): Promise<NgramsData> {
+  const query = new URLSearchParams({ top_n: String(topN) });
+  if (category && category !== 'all') {
+    query.append('category', category);
+  }
+
   try {
-    const res = await fetch(`${BASE_URL}/ngrams?top_n=${topN}`, { signal: AbortSignal.timeout(2500) });
+    const res = await fetch(`${BASE_URL}/ngrams?${query.toString()}`, { signal: AbortSignal.timeout(2500) });
     if (res.ok) return await res.json();
   } catch (e) {
     // fallback

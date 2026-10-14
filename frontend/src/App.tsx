@@ -121,16 +121,24 @@ export function App() {
 
           {/* Active Page View */}
           {activePage === 'overview' && (
-            <Overview sentimentSource={sentimentSource} />
+            <Overview
+              sentimentSource={sentimentSource}
+              selectedCategory={selectedCategory}
+              onResetCategory={handleResetFilters}
+            />
           )}
           {activePage === 'sentiment-lab' && <SentimentLab />}
           {activePage === 'model-comparison' && <ModelComparison />}
-          {activePage === 'trends' && <Trends />}
-          {activePage === 'word-analysis' && <WordAnalysis />}
+          {activePage === 'trends' && <Trends selectedCategory={selectedCategory} />}
+          {activePage === 'word-analysis' && <WordAnalysis selectedCategory={selectedCategory} />}
           {activePage === 'reviews' && (
             <Reviews
               categories={filterMeta?.categories || []}
               sentimentSource={sentimentSource}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              searchQuery={searchQuery}
+              onChangeSearchQuery={setSearchQuery}
             />
           )}
           {activePage === 'about' && <About />}

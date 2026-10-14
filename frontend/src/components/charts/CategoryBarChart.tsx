@@ -22,9 +22,10 @@ interface CategoryBarChartProps {
     neutral_pct: number;
     negative_pct: number;
   }>;
+  selectedCategory?: string;
 }
 
-export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({ data }) => {
+export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({ data, selectedCategory }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -50,16 +51,32 @@ export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({ data }) => {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
-          margin={{ top: 10, right: 10, left: -20, bottom: 20 }}
+          margin={{ top: 10, right: 10, left: -20, bottom: 25 }}
         >
           <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
           <XAxis
             dataKey="category"
-            tick={{ fontSize: 11, fill: '#64748b' }}
+            tick={({ x, y, payload }) => {
+              const isSelected = selectedCategory && selectedCategory.toLowerCase() === payload.value.toLowerCase();
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={0}
+                    y={0}
+                    dy={12}
+                    textAnchor="end"
+                    transform="rotate(-25)"
+                    fontSize={isSelected ? 11.5 : 10}
+                    fontWeight={isSelected ? 700 : 400}
+                    fill={isSelected ? '#3b82f6' : '#64748b'}
+                  >
+                    {payload.value}
+                  </text>
+                </g>
+              );
+            }}
             interval={0}
-            angle={-15}
-            textAnchor="end"
-            height={45}
+            height={55}
           />
           <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
           <Tooltip content={<CustomTooltip />} />
